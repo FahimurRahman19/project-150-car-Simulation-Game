@@ -1,4 +1,3 @@
-//project-150-car simulation game :
 #include<iostream>
 #include<vector>
 #include<conio.h>
@@ -8,18 +7,20 @@
 #include<algorithm>
 #include <mmsystem.h>
 
-
-
 #define SCREEN_WIDTH 100
 #define SCREEN_HEIGHT 30
 #define WIN_WIDTH 70
 
 using namespace std;
 
-void playMusic() {
+void playMusic2() {
     PlaySound(TEXT("music.wav"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
 }
 
+void playEndMusic() {
+    PlaySound(NULL, 0, 0);  // Stop any currently playing sound
+    PlaySound(TEXT("end.wav"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
+}
 
 HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
 COORD CursorPosition;
@@ -39,9 +40,6 @@ string playerName;
 #define COLOR_DEFAULT 7 // Default color (white text on black background)
 #define COLOR_CAR 10    // Color for the car (green text)
 #define COLOR_ENEMY 12  // Color for the enemy (red text)
-//#define COLOR_BORDER 18
-#define COLOR_YELLOW 14
-
 
 enum DifficultyLevel {
     EASY,
@@ -68,14 +66,13 @@ void setcursor(bool visible, DWORD size) {
     SetConsoleCursorInfo(console, &lpCursor);
 }
 
-
 void drawBorder() {
     for (int i = 0; i < SCREEN_HEIGHT; i++) {
-        for (int j = 0; j < 18; j++) {//draw the left and right border
-            gotoxy(0 + j, i);//set the cursor to the current column and row
+        for (int j = 0; j < 18; j++) {
+            gotoxy(0 + j, i);
             cout << "|";
             gotoxy(WIN_WIDTH - j, i);
-            cout << "|";//bar
+            cout << "|";
         }
     }
     for (int i = 0; i < SCREEN_HEIGHT; i++) {
@@ -83,6 +80,7 @@ void drawBorder() {
         cout << "|";
     }
 }
+
 void genEnemy(int ind) {
     enemyX[ind] = 17 + rand() % (33);
 }
@@ -90,13 +88,13 @@ void genEnemy(int ind) {
 int getSleepDuration() {
     switch (currentDifficulty) {
         case EASY:
-            return 40;  // Adjust sleep duration for easy level
+            return 40;
         case MEDIUM:
-            return 30;  // Adjust sleep duration for medium level
+            return 30;
         case HARD:
-            return 20;  // Adjust sleep duration for hard level
+            return 20;
         default:
-            return 40;  // Default sleep duration for unknown difficulty
+            return 40;
     }
 }
 
@@ -106,21 +104,28 @@ void drawCar() {
             gotoxy(j + carpos, i + 22);
             SetConsoleTextAttribute(console, COLOR_CAR);
             cout << car[i][j];
-            SetConsoleTextAttribute(console, COLOR_DEFAULT); // Reset color to default
+            SetConsoleTextAttribute(console, COLOR_DEFAULT);
         }
     }
 }
-void eraseCar() {//for updating we should erase the car
+
+void eraseCar() {
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            gotoxy(j + carpos, i + 22); cout << " ";
+            gotoxy(j + carpos, i + 22);
+            cout << " ";
         }
     }
 }
+
 int collision() {
-    if (enemyY[0] + 4 >= 23) {
-        if (enemyX[0] + 4 - carpos >= 0 && enemyX[0] + 4 - carpos < 9) {//horizonatal position of the enemy align with the current carposition
-            return 1;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            if (enemyY[0] + i >= 22 && enemyY[0] + i < 26) {
+                if (enemyX[0] + j >= carpos && enemyX[0] + j < carpos + 4) {
+                    return 1;
+                }
+            }
         }
     }
     return 0;
@@ -137,16 +142,20 @@ void drawEnemy(int ind) {
         cout << '\xDB' << '\xDB' << '\xDB' << '\xDB';
         gotoxy(enemyX[ind], enemyY[ind] + 3);
         cout << '\xB1' << '\xDB' << '\xDB' << '\xB1';
-        SetConsoleTextAttribute(console, COLOR_DEFAULT); // Reset color to default
+        SetConsoleTextAttribute(console, COLOR_DEFAULT);
     }
 }
 
 void eraseEnemy(int ind) {
     if (enemyFlag[ind] == true) {
-        gotoxy(enemyX[ind], enemyY[ind]); cout << "    ";
-        gotoxy(enemyX[ind], enemyY[ind] + 1); cout << "    ";
-        gotoxy(enemyX[ind], enemyY[ind] + 2); cout << "    ";
-        gotoxy(enemyX[ind], enemyY[ind] + 3); cout << "    ";
+        gotoxy(enemyX[ind], enemyY[ind]);
+        cout << "    ";
+        gotoxy(enemyX[ind], enemyY[ind] + 1);
+        cout << "    ";
+        gotoxy(enemyX[ind], enemyY[ind] + 2);
+        cout << "    ";
+        gotoxy(enemyX[ind], enemyY[ind] + 3);
+        cout << "    ";
     }
 }
 
@@ -155,8 +164,6 @@ void resetEnemy(int ind) {
     enemyY[ind] = 1;
     genEnemy(ind);
 }
-
-
 
 void updateScore() {
     gotoxy(WIN_WIDTH + 7, 5);
@@ -217,6 +224,8 @@ void displayPlayerScore() {
 }
 
 void gameover() {
+    playEndMusic();
+
     cout << endl;
     cout << "\t\t----------------------------" << endl;
     cout << "\t\t--------- Game Over --------" << endl;
@@ -224,39 +233,28 @@ void gameover() {
     cout << "\t\tPlayer Name: " << playerName << endl;
     cout << "\t\tYour Score: " << score << endl;
 
-     PlaySound(NULL, 0, 0);
-
-
     saveScore(score);
     displayPlayerScore();
     system("cls");
-}
 
+     Sleep(1);
+      PlaySound(NULL, 0, 0);
+}
 
 void drawInstructions() {
     system("cls");
     cout << "Instructions";
     cout << "\n-----------------";
-    cout << "\n Avoid car by moving left or right.";
+    cout << "\n Avoid the car by moving left or right.";
     cout << "\n\n Press 'Arrow Keys' to move the Car";
-    cout << "\n\n Press 'escape' to Exit";
+    cout << "\n\n Press 'Escape' to Exit";
     cout << "\n\n Press any Key to go back to the menu";
     getch();
 }
 
 void setDifficulty(DifficultyLevel level) {
     currentDifficulty = level;
-    switch (level) {
-        case EASY:
-            // Adjust game parameters for easy level
-            break;
-        case MEDIUM:
-            // Adjust game parameters for medium level
-            break;
-        case HARD:
-            // Adjust game parameters for hard level
-            break;
-    }
+    // Adjust game parameters based on difficulty level if needed
 }
 
 void setDifficultyMenu() {
@@ -306,22 +304,30 @@ void play() {
     genEnemy(0);
     genEnemy(1);
 
-    gotoxy(WIN_WIDTH + 7, 2); cout << "Car simulation Game";
-    gotoxy(WIN_WIDTH + 6, 4); cout << "----------";
-    gotoxy(WIN_WIDTH + 6, 6); cout << "----------";
-    gotoxy(WIN_WIDTH + 7, 12); cout << "Control ";
-    gotoxy(WIN_WIDTH + 7, 13); cout << "-------- ";
-    gotoxy(WIN_WIDTH + 2, 14); cout << "A Key - Left";
-    gotoxy(WIN_WIDTH + 2, 15); cout << "D Key - Right";
+    gotoxy(WIN_WIDTH + 7, 2);
+    cout << "Car Simulation Game";
+    gotoxy(WIN_WIDTH + 6, 4);
+    cout << "----------";
+    gotoxy(WIN_WIDTH + 6, 6);
+    cout << "----------";
+    gotoxy(WIN_WIDTH + 7, 12);
+    cout << "Control ";
+    gotoxy(WIN_WIDTH + 7, 13);
+    cout << "-------- ";
+    gotoxy(WIN_WIDTH + 2, 14);
+    cout << "A Key - Left";
+    gotoxy(WIN_WIDTH + 2, 15);
+    cout << "D Key - Right";
 
-    gotoxy(18, 5); cout << "Press any key to start";
+    gotoxy(18, 5);
+    cout << "Press any key to start";
     getch();
-    gotoxy(18, 5); cout << "                      ";
+    gotoxy(18, 5);
+    cout << "                      ";
 
-      playMusic();
+    playMusic2();
 
     while (1) {
-
         if (kbhit()) {
             char ch = getch();
             if (ch == 'a' || ch == 'A' || ch == 75) {
@@ -333,12 +339,9 @@ void play() {
                     carpos += 4;
             }
             if (ch == 27) {
-
                 break;
             }
         }
-
-
 
         drawCar();
         drawEnemy(0);
@@ -347,16 +350,13 @@ void play() {
             gameover();
             return;
         }
-
-
         Sleep(getSleepDuration());
         eraseCar();
         eraseEnemy(0);
         eraseEnemy(1);
 
-        if (enemyY[0] == 10)
-            if (enemyFlag[1] == 0)
-                enemyFlag[1] = 1;
+        if (enemyY[0] == 10 && enemyFlag[1] == 0)
+            enemyFlag[1] = 1;
 
         if (enemyFlag[0] == 1)
             enemyY[0] += 1;
@@ -365,7 +365,6 @@ void play() {
             enemyY[1] += 1;
 
         if (enemyY[0] > SCREEN_HEIGHT - 4) {
-
             resetEnemy(0);
             score++;
             updateScore();
@@ -374,7 +373,6 @@ void play() {
             resetEnemy(1);
             score++;
             updateScore();
-
         }
     }
 }
@@ -385,15 +383,24 @@ int main() {
 
     do {
         system("cls");
-        gotoxy(10, 5); cout << " -------------------------- ";
-        gotoxy(10, 6); cout << " |        Car simulation Game        | ";
-        gotoxy(10, 7); cout << " --------------------------";
-        gotoxy(10, 9); cout << "1. Start Game";
-        gotoxy(10, 10); cout << "2. Instructions";
-        gotoxy(10, 11); cout << "3. Top Scores";
-        gotoxy(10, 12); cout << "4. Difficulty Level";
-        gotoxy(10, 13); cout << "5. Quit";
-        gotoxy(10, 15); cout << "Select option: ";
+        gotoxy(10, 5);
+        cout << " -------------------------- ";
+        gotoxy(10, 6);
+        cout << " |   Car Simulation Game   | ";
+        gotoxy(10, 7);
+        cout << " --------------------------";
+        gotoxy(10, 9);
+        cout << "1. Start Game";
+        gotoxy(10, 10);
+        cout << "2. Instructions";
+        gotoxy(10, 11);
+        cout << "3. Top Scores";
+        gotoxy(10, 12);
+        cout << "4. Difficulty Level";
+        gotoxy(10, 13);
+        cout << "5. Quit";
+        gotoxy(10, 15);
+        cout << "Select option: ";
         char op = getche();
 
         switch (op) {
@@ -412,7 +419,6 @@ int main() {
             case '5':
                 exit(0);
         }
-
     } while (1);
 
     return 0;
